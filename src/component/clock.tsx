@@ -47,7 +47,7 @@ function ThreeApplication() {
 
     // init camera;
     camera.current = new THREE.PerspectiveCamera(45,(window.innerWidth/window.innerHeight),0.1, 1000);
-    camera.current.position.set(0,0,10);
+    camera.current.position.set(0,0,40);
     camera.current.lookAt(scene.current.position);
     
     if(conntainerRef.current){
@@ -58,7 +58,6 @@ function ThreeApplication() {
     }
 
     const box = initTestItem();
-    //scene.current.add(box);
     boxRef.current = box;
 
     clockRenderObj.current = new Clock();

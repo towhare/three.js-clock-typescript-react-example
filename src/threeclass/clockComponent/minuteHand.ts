@@ -43,10 +43,12 @@ export default class MinuteHand extends ClockHand{
     const geometry = new ShapeGeometry(handshape)
     const material = new MeshBasicMaterial({
       color:this.color,
-      side:DoubleSide
+      side:DoubleSide,
+      opacity:0.95,
+      transparent:true,
+      depthWrite:false
     })
     const mesh = new Mesh(geometry, material);
-    mesh.scale.set(0.1,0.1,0.1)
     
     return mesh;
   }
