@@ -1,11 +1,7 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three'
-import Hand from '../threeclass/clockComponent/hand';
-import MiniteHand from '../threeclass/clockComponent/miniteHand';
-import SecondHand from '../threeclass/clockComponent/secondHand';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-
+import Clock from '../threeclass/clock'
 
 function ThreeApplication() {
   /** render Window Container */
@@ -20,7 +16,7 @@ function ThreeApplication() {
   /** camera */
   const camera = useRef<THREE.PerspectiveCamera>();
 
-  /** clock */
+  /** clock used for countting delta time */
   const clock = useRef<THREE.Clock>(new THREE.Clock());
 
   /** Date */
@@ -31,15 +27,9 @@ function ThreeApplication() {
 
   const animationId = useRef<number>();
 
-  const testHand = useRef<Hand>();
+  const controls = useRef<OrbitControls>();
 
-  // minite hand
-  const miniteHand = useRef<MiniteHand>();
-
-  // second hand
-  const secondHand = useRef<SecondHand>()
-
-  const controls = useRef<OrbitControls>()
+  const clockRenderObj = useRef<Clock>();
 
   /** */
   // init a three.js renderer camera and scene
@@ -68,35 +58,12 @@ function ThreeApplication() {
     }
 
     const box = initTestItem();
-    scene.current.add(box);
+    //scene.current.add(box);
     boxRef.current = box;
 
+    clockRenderObj.current = new Clock();
+    scene.current.add(clockRenderObj.current.renderObj)
 
-    // add basic hand test
-    const hand = new Hand({
-      angle:180
-    });
-    testHand.current = hand;
-    scene.current.add(hand.renderObj);
-
-    // addminiteHand
-    miniteHand.current = new MiniteHand({
-      angle:0,
-      color:0xffff00
-    });
-    miniteHand.current.renderObj.rotateX(Math.PI/2);
-    scene.current.add(miniteHand.current.renderObj);
-    miniteHand.current.update();
-
-    // addSecondHand
-    secondHand.current = new SecondHand({
-      angle:0
-    });
-    scene.current.add(secondHand.current.renderObj);
-    //secondHand.current.renderObj.rotation.z = Math.PI/2;
-    secondHand.current.renderObj.rotation.x = Math.PI/4;
-    
-    
 
     windowResize(window.innerWidth,window.innerHeight);
     initControls();
@@ -157,10 +124,11 @@ function ThreeApplication() {
   const clockUpdate = () => {
     date.current = new Date();
     const sec = date.current.getSeconds();
-    if(testHand.current){
-      const secAngle = (60-sec)/60 * 360;
-      testHand.current.pointAngle = secAngle;
-      testHand.current.update();
+    const minute = date.current.getMinutes();
+    const hour = date.current.getHours();
+
+    if(clockRenderObj.current){
+      clockRenderObj.current.update(hour,minute,sec);
     }
   }
 

@@ -1,6 +1,6 @@
 
 /**
- * three.js component minite hand
+ * three.js component minute hand
  */
  import {
   ShapeGeometry,
@@ -10,11 +10,23 @@
   DoubleSide
 } from 'three'
 import ClockHand from './hand'
-export default class MiniteHand extends ClockHand{
-  // constructor(){
-  //   super();
-  //   this.renderObj = this.initObject();
-  // }
+
+interface MinuteHandOptions{
+  /** minite number from 0 to 60 */
+  minute?:number,
+  color?:number
+}
+export default class MinuteHand extends ClockHand{
+  protected miniteTemp:number
+  constructor({color = 0xff0000, minute = 0}:MinuteHandOptions ={}){
+    const m = MinuteHand.getAngleFromMinite(minute);
+    super({color, angle:m});
+    this.miniteTemp = minute;
+  }
+  // change minite to angle degree
+  static getAngleFromMinite(minute:number){
+    return (minute/60)*360;
+  }
   initObject(){
     const handshape = new Shape();
     handshape.moveTo(0,-1);
@@ -37,5 +49,14 @@ export default class MiniteHand extends ClockHand{
     mesh.scale.set(0.1,0.1,0.1)
     
     return mesh;
+  }
+
+  get minite(){
+    return this.miniteTemp;
+  }
+
+  set minite(min) {
+    this.miniteTemp = min;
+    this.pointAngle = MinuteHand.getAngleFromMinite(min);
   }
 }
