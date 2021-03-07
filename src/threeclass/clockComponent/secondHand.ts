@@ -17,11 +17,26 @@ export default class MiniteHand extends ClockHand{
   // }
   initObject(){
     const handshape = new Shape();
-    handshape.moveTo(0,-1);
-    handshape.lineTo(1,0);
-    handshape.lineTo(0,10);
-    handshape.lineTo(-1,0);
-    handshape.lineTo(0,-1);
+
+    let pointsArray = [
+      [-0.3,-0.5],
+      [0.3,-0.5],
+      [0.3,10],
+      [0.7,10.5],
+      [0, 12],
+      [-0.7,10.5],
+      [-0.3,10],
+      [-0.3,-0.5]
+    ]
+
+    for(let i = 0; i < pointsArray.length; i++){
+      const currentPoint = pointsArray[i]
+      if(i===0){
+        handshape.moveTo(currentPoint[0],currentPoint[1]);
+      } else {
+        handshape.lineTo(currentPoint[0],currentPoint[1]);
+      }
+    }
 
     const hole = new Shape();
     hole.absarc(0,0,0.5,0,2*Math.PI,false);

@@ -1,10 +1,9 @@
 
-import { render } from '@testing-library/react';
-import React, { DOMElement, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three'
-import What from './justuse';
 import Hand from '../threeclass/clockComponent/hand';
 import MiniteHand from '../threeclass/clockComponent/miniteHand';
+import SecondHand from '../threeclass/clockComponent/secondHand';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 
@@ -34,7 +33,11 @@ function ThreeApplication() {
 
   const testHand = useRef<Hand>();
 
+  // minite hand
   const miniteHand = useRef<MiniteHand>();
+
+  // second hand
+  const secondHand = useRef<SecondHand>()
 
   const controls = useRef<OrbitControls>()
 
@@ -65,21 +68,34 @@ function ThreeApplication() {
     }
 
     const box = initTestItem();
-    //scene.current.add(box);
+    scene.current.add(box);
     boxRef.current = box;
 
+
+    // add basic hand test
     const hand = new Hand({
       angle:180
     });
     testHand.current = hand;
     scene.current.add(hand.renderObj);
 
+    // addminiteHand
     miniteHand.current = new MiniteHand({
       angle:0,
       color:0xffff00
     });
+    miniteHand.current.renderObj.rotateX(Math.PI/2);
     scene.current.add(miniteHand.current.renderObj);
     miniteHand.current.update();
+
+    // addSecondHand
+    secondHand.current = new SecondHand({
+      angle:0
+    });
+    scene.current.add(secondHand.current.renderObj);
+    //secondHand.current.renderObj.rotation.z = Math.PI/2;
+    secondHand.current.renderObj.rotation.x = Math.PI/4;
+    
     
 
     windowResize(window.innerWidth,window.innerHeight);
@@ -88,7 +104,7 @@ function ThreeApplication() {
     return ()=>{
       disposeScene();
     }
-  },[]);
+  });
 
   // init orbit controller
   const initControls = () => {
@@ -178,12 +194,15 @@ function ThreeApplication() {
     })
 
     const BoxMesh = new THREE.Mesh(boxGeometry,boxMeshBasicRedMaterial);
+    BoxMesh.position.x = 2;
+    BoxMesh.position.y = 2;
+    BoxMesh.rotateX(Math.PI/8);
     return BoxMesh;
   }
 
   const boxUpdate = (delta:number) => {
     if(boxRef.current){
-      boxRef.current.rotation.z += delta * 1;
+      boxRef.current.rotation.x += delta * 1;
     }
   }
 

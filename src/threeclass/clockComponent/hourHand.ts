@@ -1,8 +1,8 @@
 
 /**
- * basic hand class
+ * three.js component Hour Hour hand
  */
-import {
+ import {
   ShapeGeometry,
   Object3D,
   MathUtils,
@@ -11,34 +11,25 @@ import {
   Mesh,
   DoubleSide
 } from 'three'
-
-interface HandOptions{
-  /** from 0 - 360 */
-  angle?:number
+import ClockHand from './hand'
+import HandOptions from './hand';
+interface HourHandOptions{
   color?:number
+  hour?:number
 }
-
-export default class ClockHand{
-  /**
-   * the angle for a hand 
-   */
-  pointAngle:number
-  renderObj:THREE.Object3D
-  color:number
-  constructor(
-    {angle = 19,color = 0xff0000}:HandOptions = {}){
+export default class HourHand extends ClockHand{
+  hour:number
+  constructor({hour = 0,color=0x00ff00}:HourHandOptions={}){
+    super();
+    this.hour = hour;
     this.color = color;
-    this.pointAngle = angle;
     this.renderObj = this.initObject();
-    this.update();
   }
-
-  /** init this hand */
-  initObject():Object3D{
+  initObject(){
     const handshape = new Shape();
     handshape.moveTo(0,-1);
     handshape.lineTo(1,0);
-    handshape.lineTo(0,16);
+    handshape.lineTo(0,10);
     handshape.lineTo(-1,0);
     handshape.lineTo(0,-1);
 
@@ -56,19 +47,5 @@ export default class ClockHand{
     mesh.scale.set(0.1,0.1,0.1)
     
     return mesh;
-  }
-
-  
-  public update(){
-    const rad = this.angleToRad();
-    const radChanged = Math.PI*2 - rad % (Math.PI*2)
-    if(this.renderObj) {
-      this.renderObj.rotation.z = radChanged
-    }
-  }
-
-  private angleToRad(){
-    const rad = MathUtils.degToRad(this.pointAngle);
-    return rad;
   }
 }
