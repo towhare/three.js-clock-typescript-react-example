@@ -47,7 +47,7 @@ function ThreeApplication() {
 
     // init camera;
     camera.current = new THREE.PerspectiveCamera(45,(window.innerWidth/window.innerHeight),0.1, 1000);
-    camera.current.position.set(0,0,40);
+    camera.current.position.set(0,0,80);
     camera.current.lookAt(scene.current.position);
     
     if(conntainerRef.current){
@@ -56,9 +56,6 @@ function ThreeApplication() {
         windowResize(window.innerWidth,window.innerHeight);
       })
     }
-
-    const box = initTestItem();
-    boxRef.current = box;
 
     clockRenderObj.current = new Clock();
     scene.current.add(clockRenderObj.current.renderObj)
@@ -154,18 +151,6 @@ function ThreeApplication() {
     }
   }
 
-  const initTestItem = () => {
-    const boxGeometry = new THREE.BoxBufferGeometry();
-    const boxMeshBasicRedMaterial = new THREE.MeshBasicMaterial({
-      color:0xff0000
-    })
-
-    const BoxMesh = new THREE.Mesh(boxGeometry,boxMeshBasicRedMaterial);
-    BoxMesh.position.x = 2;
-    BoxMesh.position.y = 2;
-    BoxMesh.rotateX(Math.PI/8);
-    return BoxMesh;
-  }
 
   const boxUpdate = (delta:number) => {
     if(boxRef.current){

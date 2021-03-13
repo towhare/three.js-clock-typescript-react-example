@@ -59,6 +59,6 @@ export default class MinuteHand extends ClockHand{
 
   set minite(min) {
     this.miniteTemp = min;
-    this.pointAngle = MinuteHand.getAngleFromMinite(min);
+    this.angle = MinuteHand.getAngleFromMinite(min);
   }
 }

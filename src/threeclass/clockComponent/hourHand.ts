@@ -47,7 +47,7 @@ export default class HourHand extends ClockHand {
 
   set hour(hour:number){
     this.hourtemp = hour;
-    this.pointAngle = this.changeHourToAngle(hour)
+    this.angle = this.changeHourToAngle(hour)
   }
 
   get hour(){

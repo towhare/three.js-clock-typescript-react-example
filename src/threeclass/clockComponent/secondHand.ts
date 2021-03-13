@@ -18,10 +18,12 @@ interface SecondHandInput {
 export default class MiniteHand extends ClockHand{
 
   protected secondTemp:number;
+  protected secondOld:number;
   constructor({second = 0, color = 0xff00ff}:SecondHandInput = {}){
     const initSecond = MiniteHand.changeSecondeToAngle(second);
     super({color,angle:initSecond});
     this.secondTemp = initSecond;
+    this.secondOld = initSecond;
   }
 
   static changeSecondeToAngle(second:number){
@@ -75,6 +77,6 @@ export default class MiniteHand extends ClockHand{
 
   set second(second){
     this.secondTemp = second;
-    this.pointAngle = MiniteHand.changeSecondeToAngle(second);
+    this.angle = MiniteHand.changeSecondeToAngle(second);
   }
 }

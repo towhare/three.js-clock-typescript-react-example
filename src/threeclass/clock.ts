@@ -8,7 +8,8 @@ import * as THREE from 'three';
 
 import HourHand from './clockComponent/hourHand';
 import MinuteHand from './clockComponent/minuteHand';
-import SecondHand from './clockComponent/secondHand'
+import SecondHand from './clockComponent/secondHand';
+import TextPlane from './textPlane';
 interface ClockInput {
   hour?: number,
   minute?: number,
@@ -46,10 +47,10 @@ export default class THREEClock {
     //add hour hand
     clockContainer.add(this.hourHand.renderObj)
     // add minite hand
-    this.miniteHand.renderObj.position.z = 0.01;
+    this.miniteHand.renderObj.position.z = 0.1;
     clockContainer.add(this.miniteHand.renderObj)
     // add second hand
-    this.secondHand.renderObj.position.z = 0.02;
+    this.secondHand.renderObj.position.z = 0.2;
     clockContainer.add(this.secondHand.renderObj);
 
     const background = this.initBackground();
@@ -64,10 +65,11 @@ export default class THREEClock {
 
     const textureLoader = new THREE.TextureLoader();
     const backgroundImage = textureLoader.load('/rabbit.png')
-    const geometry = new THREE.CircleGeometry( 14, 64 );
+    const geometry = new THREE.CircleGeometry( 15, 64 );
     const material = new THREE.MeshBasicMaterial({
       color:0xffffff,
       side:THREE.DoubleSide,
+      opacity:0.95,
       map:backgroundImage
     });
     const backgroundCircle = new THREE.Mesh(geometry,material);
@@ -89,14 +91,25 @@ export default class THREEClock {
     const smallPlane = new THREE.Mesh(smallPlaneGeometry,material);
     
     const z = 0;
-    const radius = 13;
+    const radius = 14;
     const smallAngle = Math.PI /30;
     for(let i = 0; i < 12; i++){
       const pointCloned = point.clone();
-      const angle = (Math.PI * 2 * (12-i))/12 + (4/3) * Math.PI;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
-      pointCloned.position.set(x,y,z);
+      const angle = (Math.PI * 2 * (12-i))/12 + (2/6) * Math.PI;
+      const x = Math.cos(angle) * radius*1;
+      const y = Math.sin(angle) * radius*1;
+      const x2 = Math.cos(angle) * radius*0.85;
+      const y2 = Math.sin(angle) * radius*0.85;
+      pointCloned.position.set(x,y,z+0.3);
+
+      const numberTextPlane = new TextPlane({
+        text: ''+(i+1),
+        planeHeight:2,
+        fontSize:80,
+        fillStyle:"#222222"
+      })
+      numberTextPlane.renderObj.position.set(x2,y2,z+0.5);
+      pointsGroup.add(numberTextPlane.renderObj);
 
       for(let j = 0 ; j < 4; j++){
         const ang = angle + smallAngle*(j+1);
