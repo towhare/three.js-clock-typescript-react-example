@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import Clock from '../threeclass/clock'
+import Clock from '../threeclass/clock';
+import Tube from '../threeclass/tube';
 
 function ThreeApplication() {
   /** render Window Container */
@@ -14,7 +15,7 @@ function ThreeApplication() {
   const scene = useRef<THREE.Scene>();
 
   /** camera */
-  const camera = useRef<THREE.PerspectiveCamera>();
+  const camera = useRef<THREE.OrthographicCamera>();
 
   /** clock used for countting delta time */
   const clock = useRef<THREE.Clock>(new THREE.Clock());
@@ -46,7 +47,10 @@ function ThreeApplication() {
     scene.current = new THREE.Scene();
 
     // init camera;
-    camera.current = new THREE.PerspectiveCamera(45,(window.innerWidth/window.innerHeight),0.1, 1000);
+    //camera.current = new THREE.PerspectiveCamera(45,(window.innerWidth/window.innerHeight),0.1, 1000);
+    const width = 20 ;
+    const height = window.innerHeight/window.innerWidth * width;
+    camera.current = new THREE.OrthographicCamera(-width,width,height,-height)
     camera.current.position.set(0,0,80);
     camera.current.lookAt(scene.current.position);
     
@@ -58,7 +62,10 @@ function ThreeApplication() {
     }
 
     clockRenderObj.current = new Clock();
-    scene.current.add(clockRenderObj.current.renderObj)
+    //scene.current.add(clockRenderObj.current.renderObj);
+
+    const tube = new Tube();
+    scene.current.add(tube.renderObj);
 
 
     windowResize(window.innerWidth,window.innerHeight);
@@ -121,7 +128,8 @@ function ThreeApplication() {
     date.current = new Date();
     const sec = date.current.getSeconds();
     const minute = date.current.getMinutes();
-    const hour = date.current.getHours();
+    let hour = date.current.getHours();
+    hour += (minute/60)
 
     if(clockRenderObj.current){
       clockRenderObj.current.update(hour,minute,sec);
@@ -144,7 +152,14 @@ function ThreeApplication() {
 
       // update camera
       if(camera.current){
-        camera.current.aspect = width/height;
+        //camera.current.aspect = width/height;
+        const width = window.innerWidth ;
+        const height = window.innerHeight/window.innerWidth * width;
+
+        camera.current.bottom = -height/2;
+        camera.current.top = height/2;
+        camera.current.left = -width/2;
+        camera.current.right = width/2;
         camera.current.updateProjectionMatrix();
       }
 
