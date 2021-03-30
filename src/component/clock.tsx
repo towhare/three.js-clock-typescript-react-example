@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Clock from '../threeclass/clock';
-import Tube from '../threeclass/tube';
+import FatLine from '../threeclass/tube';
 
 function ThreeApplication() {
   /** render Window Container */
@@ -64,7 +64,7 @@ function ThreeApplication() {
     clockRenderObj.current = new Clock();
     //scene.current.add(clockRenderObj.current.renderObj);
 
-    const tube = new Tube();
+    const tube = new FatLine([]);
     scene.current.add(tube.renderObj);
 
 

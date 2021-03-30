@@ -11,12 +11,16 @@ import {
   BufferGeometry,
   BufferAttribute,
   ShaderMaterial,
-  Matrix4
+  Matrix4,
+  Group,
+  MinEquation,
+  MaxEquation,
+  CustomBlending
 } from 'three'
 
-export default class Tube{
-  renderObj:Mesh
-  constructor(){
+export default class FatLine{
+  renderObj:Group
+  constructor(points:Array<number>){
     this.renderObj = this.initLine();
   }
 
@@ -38,6 +42,7 @@ export default class Tube{
     return mesh
   }
   initLine(){
+    // 思路 在线段上，取(1-y) 作为颜色的深度 重叠的部分也是求最大值，将材质的渲染方式变为混合 取最大值
     let positionInstance = [
       0, -0.5,0,
       1, -0.5,0,
@@ -46,7 +51,7 @@ export default class Tube{
       1, 0.5,0,
       0, 0.5,0
     ]
-    const positions = initPoisitions(4);
+    const positions = initPoisitions(3);// 意味着几段
 
     function initEndPoint(array:Array<number>){
       const pointAArray = [];
@@ -58,16 +63,58 @@ export default class Tube{
       return new Float32Array(pointAArray);
     }
 
+    const rawPositionData = [
+      -6,0,
+      6,3,
+      6,6,
+      16,12
+    ]
+
     const pointA = initEndPoint([
       -6,0,
       6,3,
       6,6
     ]);
+
     const pointB = initEndPoint([
       6,3,
       6,6,
       16,12
     ]);
+
+    const pointAMiterJoin = initEndPoint([
+      -6,0,
+      6,3
+    ])
+
+    const pointBMiterJoin = initEndPoint([
+      6,3,
+      6,6
+    ])
+
+    const pointCMiterJoin = initEndPoint([
+      6,6,
+      16,12
+    ])
+
+    const miterJoinInstance = [
+      0,0,0,
+      1,0,0,
+      0,1,0,
+      0,0,0,
+      0,1,0,
+      0,0,1
+    ]
+
+    function initMiterPositions(length:number){
+      const positionArray = [];
+      for(let i = 0; i < length; i++){
+        positionArray.push(...miterJoinInstance)
+      }
+      return new Float32Array(positionArray);
+    }
+
+    // 中间的补充 由两个组成
 
     function initPoisitions(length:number){
       const positionArray = [];
@@ -76,67 +123,139 @@ export default class Tube{
       }
       return new Float32Array(positionArray)
     }
-    const vertices = new Float32Array( [
-      -1.0, -1.0,  1.0,
-       1.0, -1.0,  1.0,
-       1.0,  1.0,  1.0,
-    
-       1.0,  1.0,  1.0,
-      -1.0,  1.0,  1.0,
-      -1.0, -1.0,  1.0
-    ] );
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(positions,3));
     geometry.setAttribute('pointA', new BufferAttribute(pointA,2));
     geometry.setAttribute('pointB', new BufferAttribute(pointB,2));
     const vertexShader = `
     varying vec2 vUv;
-    // attribute vec2 position;
-    attribute vec2 pointA,pointB;
+    attribute vec2 pointA,pointB,pointC;
     uniform mat4 projection;
-    varying vec2 testColor;
+    uniform float width;
     void main(){
-      float width = 5.0;
-      vUv = uv;
-      //vec2 po = positionx * 10.;
       vec2 xBasis = pointB - pointA;
       mat4 p;
       vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
       vec2 point = pointA + xBasis * position.x + yBasis * width * position.y;
       vec3 newPosition = vec3(point,0.0);
+      vUv = position.xy*2.;
       vec4 modelViewPosition = modelViewMatrix * vec4(newPosition, 1.0);
-      testColor = modelViewPosition.xy;
-      gl_Position = projectionMatrix * modelViewPosition;// modelViewPosition;
-      //gl_Position = projection * vec4(point,0.,1.)；
+      gl_Position = projectionMatrix * modelViewPosition;
     }
     `
     let uniforms = {
       time:{value:1.0},
       projection:{value: new Matrix4()},
-      color:{value:new Vector3(0,1,0)}
+      color:{value:new Vector3(0.5,0.5,0.5)},
+      width:{value: 6}
     }
     const fragmentShader = `
-      varying vec2 testColor;
       varying vec2 vUv;
       varying vec3 positionx;
       uniform float time;
       uniform vec3 color;
       void main(){
         vec2 st = - 1.0 + 2.0 * vUv;
-        gl_FragColor = vec4(color,1.0);
+        gl_FragColor = vec4(color * abs(abs(vUv.y)-1.0) ,abs(vUv.y) );
       }
+    `
+
+    const miterVertex = `
+    varying vec2 vUv;
+    attribute vec2 pointA,pointB,pointC;
+    uniform float width;
+    uniform mat4 projection;
+    void main(){
+
+      vec2 tangent = normalize(normalize(pointC - pointB) + normalize(pointB - pointA));
+      vec2 miter = vec2(-tangent.y, tangent.x);
+      vec2 ab = pointB - pointA;
+      vec2 cb = pointB - pointC;
+      vec2 abNorm = normalize(vec2(-ab.y,ab.x));
+      vec2 cbNorm = - normalize(vec2(-cb.y, cb.x));
+      float sigma = sign(dot(ab+cb,miter));
+
+      vec2 p0 = 0.5 * width * sigma * ( sigma < 0.0 ? abNorm : cbNorm );
+      vec2 p1 = 0.5 * width * sigma * miter / dot(miter, abNorm);
+      vec2 p2 = 0.5 * width * sigma * ( sigma < 0.0 ? cbNorm : abNorm );
+
+      vec2 point = pointB + position.x * p0 + position.y * p1 + position.z * p2;
+      vUv = vec2(0., max(max(position.x, position.y),position.z) );
+      vec3 newPosition = vec3(point,0.0);
+      vec4 modelViewPosition = modelViewMatrix * vec4(newPosition, 1.0);
+      gl_Position = projectionMatrix * modelViewPosition;
+    }
     `
 
     const material = new ShaderMaterial({
       uniforms:uniforms,
       vertexShader:vertexShader,
-      fragmentShader:fragmentShader
+      fragmentShader:fragmentShader,
+      transparent:true,
+      blendEquation:MaxEquation,
+      blending:CustomBlending,
+      depthWrite:false
     })
     const basicMaterial = new MeshBasicMaterial({
       color:0xff0000
     })
 
+    let uniforms2 = {
+      time:{value:1.0},
+      projection:{value: new Matrix4()},
+      color:{value:new Vector3(0.5,0.5,0.5)},
+      width:{value: 6}
+    }
+    const miterMaterial = new ShaderMaterial({
+      uniforms:uniforms2,
+      vertexShader:miterVertex,
+      fragmentShader:fragmentShader,
+      transparent:true,
+      blendEquation:MaxEquation,
+      blending:CustomBlending,
+      depthWrite:false
+    })
+
+    const miterGeometry = new BufferGeometry();
+    const miterPositions = initMiterPositions(2);
+    miterGeometry.setAttribute('position',new BufferAttribute(miterPositions,3));
+    miterGeometry.setAttribute('pointA', new BufferAttribute(pointAMiterJoin,2));
+    miterGeometry.setAttribute('pointB', new BufferAttribute(pointBMiterJoin,2));
+    miterGeometry.setAttribute('pointC', new BufferAttribute(pointCMiterJoin,2));
+
     const mesh = new Mesh(geometry,material);
-    return mesh;
+
+    const miterMesh = new Mesh(miterGeometry,miterMaterial);
+
+    const group = new Group();
+    group.add(mesh);
+    group.add(miterMesh)
+    return group;
+  }
+
+  initMiterLine(points:Array<number>){
+    let positionInsance = [
+      0, -0.5, 0,
+      1, -0.5, 0,
+      1, 0.5, 0,
+      0, -0.5, 0,
+      1, 0.5, 0,
+      0, 0.5, 0
+    ]
+    
+    // 创建前后的节点或者前中后的节点，* 6倍
+    function initEndPoint(array:Array<number>){
+      const pointLength = Math.floor(array.length/2);
+      const pointAArray = [];
+      for(let i = 0; i < array.length; i+=2) {
+        for(let j = 0; j < 6; j++){
+          pointAArray.push(array[i], array[i+1])
+        }
+      }
+      return new Float32Array(pointAArray);
+    }
+    
+    const baseLineGeometry = new BufferGeometry();
+    
   }
 }
