@@ -9,13 +9,15 @@ import {
   EllipseCurve,
   Mesh,
   BufferGeometry,
+  InstancedBufferGeometry,
   BufferAttribute,
   ShaderMaterial,
   Matrix4,
   Group,
   MinEquation,
   MaxEquation,
-  CustomBlending
+  CustomBlending,
+  InstancedBufferAttribute
 } from 'three'
 
 export default class FatLine{
@@ -63,24 +65,31 @@ export default class FatLine{
       return new Float32Array(pointAArray);
     }
 
+    function initSingleInstanceEndPoint(array:Array<number>){
+
+    }
+
     const rawPositionData = [
       -6,0,
       6,3,
       6,6,
       16,12
     ]
-
-    const pointA = initEndPoint([
+    const pointARaw = [
       -6,0,
       6,3,
       6,6
-    ]);
+    ];
 
-    const pointB = initEndPoint([
+    const pointA = initEndPoint(pointARaw);
+
+    const pointBRaw = [
       6,3,
       6,6,
       16,12
-    ]);
+    ];
+
+    const pointB = initEndPoint(pointBRaw);
 
     const pointAMiterJoin = initEndPoint([
       -6,0,
@@ -124,9 +133,24 @@ export default class FatLine{
       return new Float32Array(positionArray)
     }
     const geometry = new BufferGeometry();
-    geometry.setAttribute('position', new BufferAttribute(positions,3));
+    const instancedGeometry = new InstancedBufferGeometry();
+    const positionInstanceArray = new Float32Array(positionInstance)
+
+    const newInstancedPositionAttribute = new InstancedBufferAttribute(positions,3);
+    const positionAttribute = new BufferAttribute(positions,3);
+    const instancedPointA = new Float32Array(pointARaw);
+    const instancedPointB = new Float32Array(pointBRaw);
+
+    instancedGeometry.setAttribute('position',positionAttribute);
+    instancedGeometry.setAttribute('pointA', new InstancedBufferAttribute(instancedPointA,2));
+    instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,2));
+    instancedGeometry.instanceCount = 3;
+
+    geometry.setAttribute('position', positionAttribute);
     geometry.setAttribute('pointA', new BufferAttribute(pointA,2));
     geometry.setAttribute('pointB', new BufferAttribute(pointB,2));
+
+
     const vertexShader = `
     varying vec2 vUv;
     attribute vec2 pointA,pointB,pointC;
@@ -146,7 +170,7 @@ export default class FatLine{
     let uniforms = {
       time:{value:1.0},
       projection:{value: new Matrix4()},
-      color:{value:new Vector3(0.5,0.5,0.5)},
+      color:{value:new Vector3(1,0.,0.5)},
       width:{value: 6}
     }
     const fragmentShader = `
@@ -156,7 +180,8 @@ export default class FatLine{
       uniform vec3 color;
       void main(){
         vec2 st = - 1.0 + 2.0 * vUv;
-        gl_FragColor = vec4(color * abs(abs(vUv.y)-1.0) ,abs(vUv.y) );
+        //gl_FragColor = vec4(color * abs(abs(vUv.y)-1.0) ,abs(vUv.y) );
+        gl_FragColor = vec4(color,1.);
       }
     `
 
@@ -203,7 +228,7 @@ export default class FatLine{
     let uniforms2 = {
       time:{value:1.0},
       projection:{value: new Matrix4()},
-      color:{value:new Vector3(0.5,0.5,0.5)},
+      color:{value:new Vector3(1,1,1)},
       width:{value: 6}
     }
     const miterMaterial = new ShaderMaterial({
@@ -223,13 +248,14 @@ export default class FatLine{
     miterGeometry.setAttribute('pointB', new BufferAttribute(pointBMiterJoin,2));
     miterGeometry.setAttribute('pointC', new BufferAttribute(pointCMiterJoin,2));
 
-    const mesh = new Mesh(geometry,material);
+    //const mesh = new Mesh(geometry,material);
+    const mesh = new Mesh(instancedGeometry,material);
 
     const miterMesh = new Mesh(miterGeometry,miterMaterial);
 
     const group = new Group();
     group.add(mesh);
-    group.add(miterMesh)
+    group.add(miterMesh);
     return group;
   }
 
