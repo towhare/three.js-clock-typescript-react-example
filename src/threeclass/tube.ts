@@ -17,7 +17,8 @@ import {
   MinEquation,
   MaxEquation,
   CustomBlending,
-  InstancedBufferAttribute
+  InstancedBufferAttribute,
+  Vector2
 } from 'three'
 
 export default class FatLine{
@@ -146,6 +147,8 @@ export default class FatLine{
     instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,2));
     instancedGeometry.instanceCount = 3;
 
+
+
     geometry.setAttribute('position', positionAttribute);
     geometry.setAttribute('pointA', new BufferAttribute(pointA,2));
     geometry.setAttribute('pointB', new BufferAttribute(pointB,2));
@@ -156,6 +159,8 @@ export default class FatLine{
     attribute vec2 pointA,pointB,pointC;
     uniform mat4 projection;
     uniform float width;
+    varying vec3 glposition;
+    uniform vec2 resolution;
     void main(){
       vec2 xBasis = pointB - pointA;
       mat4 p;
@@ -165,19 +170,55 @@ export default class FatLine{
       vUv = position.xy*2.;
       vec4 modelViewPosition = modelViewMatrix * vec4(newPosition, 1.0);
       gl_Position = projectionMatrix * modelViewPosition;
+      glposition = gl_Position.xyz;
+    }
+    `
+
+    const instancedBufferGeometry3D = new InstancedBufferGeometry();
+    const positions3D = new Float32Array(this.roundCapJoinGeometry(16));
+    instancedBufferGeometry3D.setAttribute('position',new BufferAttribute(positions3D,3));
+    instancedBufferGeometry3D.setAttribute('pointA', new InstancedBufferAttribute(instancedPointA,2))
+    instancedBufferGeometry3D.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,2))
+    
+
+    const vertexShader3D = `
+    varying vec2 vUv;
+    attribute vec2 pointA,pointB,pointC;
+    uniform mat4 projection;
+    uniform float width;
+    varying vec3 glposition;
+    uniform vec2 resolution;
+    void main(){
+      vec4 clip0 = projectionMatrix * modelViewMatrix * vec4( pointA, 0., 1. );
+      vec4 clip1 = projectionMatrix * modelViewMatrix * vec4( pointB, 0., 1. );
+
+      vec2 screen0 = resolution * ( 0.5 * clip0.xy/clip0.w + 0.5 );
+      vec2 screen1 = resolution * ( 0.5 * clip1.xy/clip1.w + 0.5 );
+
+      vec2 xBasis = normalize( screen1 - screen0 );
+      vec2 yBasis = vec2( -xBasis.y, xBasis.x );
+      
+      vec2 pt0 = screen0 + width * ( position.x * xBasis + position.y * yBasis );
+      vec2 pt1 = screen1 + width * ( position.x * xBasis + position.y * yBasis );
+      
+      vec2 pt = mix( pt0, pt1, position.z );
+      vec4 clip = mix( clip0, clip1, position.z );
+      gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
     }
     `
     let uniforms = {
       time:{value:1.0},
       projection:{value: new Matrix4()},
       color:{value:new Vector3(1,0.,0.5)},
-      width:{value: 6}
+      width:{value: 6},
+      resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
     }
     const fragmentShader = `
       varying vec2 vUv;
       varying vec3 positionx;
       uniform float time;
       uniform vec3 color;
+      varying vec3 glposition;
       void main(){
         vec2 st = - 1.0 + 2.0 * vUv;
         //gl_FragColor = vec4(color * abs(abs(vUv.y)-1.0) ,abs(vUv.y) );
@@ -190,6 +231,8 @@ export default class FatLine{
     attribute vec2 pointA,pointB,pointC;
     uniform float width;
     uniform mat4 projection;
+    varying vec3 glposition;
+    uniform vec2 resolution;
     void main(){
 
       vec2 tangent = normalize(normalize(pointC - pointB) + normalize(pointB - pointA));
@@ -251,11 +294,24 @@ export default class FatLine{
     //const mesh = new Mesh(geometry,material);
     const mesh = new Mesh(instancedGeometry,material);
 
+    const THREEDmaterial = new ShaderMaterial({
+      uniforms:uniforms,
+      vertexShader:vertexShader3D,
+      fragmentShader:fragmentShader,
+      transparent:true,
+      blendEquation:MaxEquation,
+      blending:CustomBlending,
+      depthWrite:false
+    })
+    const meshIn3D = new Mesh(instancedBufferGeometry3D,THREEDmaterial);
+
     const miterMesh = new Mesh(miterGeometry,miterMaterial);
 
     const group = new Group();
-    group.add(mesh);
-    group.add(miterMesh);
+    group.add(meshIn3D);
+
+
+    //group.add(miterMesh);
     return group;
   }
 
@@ -283,5 +339,50 @@ export default class FatLine{
     
     const baseLineGeometry = new BufferGeometry();
     
+  }
+
+  roundCapJoinGeometry(resolution:number) {
+    const instanceRoundRound = [
+      0, -0.5, 0,
+      0, -0.5, 1,
+      0, 0.5, 1,
+      0, -0.5, 0,
+      0, 0.5, 1,
+      0, 0.5, 0
+    ];
+    // Add the left cap.
+    for (let step = 0; step < resolution; step++) {
+      const theta0 = Math.PI / 2 + ((step + 0) * Math.PI) / resolution;
+      const theta1 = Math.PI / 2 + ((step + 1) * Math.PI) / resolution;
+      instanceRoundRound.push(0, 0, 0);
+      instanceRoundRound.push(
+        0.5 * Math.cos(theta0),
+        0.5 * Math.sin(theta0),
+        0
+      );
+      instanceRoundRound.push(
+        0.5 * Math.cos(theta1),
+        0.5 * Math.sin(theta1),
+        0
+      );
+    }
+    // Add the right cap.
+    for (let step = 0; step < resolution; step++) {
+      const theta0 = (3 * Math.PI) / 2 + ((step + 0) * Math.PI) / resolution;
+      const theta1 = (3 * Math.PI) / 2 + ((step + 1) * Math.PI) / resolution;
+      instanceRoundRound.push(0, 0, 1);
+      instanceRoundRound.push(
+        0.5 * Math.cos(theta0),
+        0.5 * Math.sin(theta0),
+        1
+      );
+      instanceRoundRound.push(
+        0.5 * Math.cos(theta1),
+        0.5 * Math.sin(theta1),
+        1
+      );
+    }
+    console.log('instanceRoundRound',instanceRoundRound)
+    return instanceRoundRound
   }
 }
