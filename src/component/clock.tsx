@@ -3,6 +3,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Clock from '../threeclass/clock';
 import FatLine from '../threeclass/tube';
+import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js'
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 
 function ThreeApplication() {
   /** render Window Container */
@@ -62,6 +65,8 @@ function ThreeApplication() {
     }
 
     clockRenderObj.current = new Clock();
+    const line = initFatLine();
+    //scene.current.add(line);
     //scene.current.add(clockRenderObj.current.renderObj);
 
     const tube = new FatLine([]);
@@ -164,6 +169,23 @@ function ThreeApplication() {
       }
 
     }
+  }
+
+  function initFatLine(){
+    const geometry = new LineGeometry();
+    geometry.setPositions([
+      0,0,0,
+      0,10,0,
+      0,10,10,
+      0,10,15
+    ]);
+    const material = new LineMaterial({
+      color:0xffffff,
+      linewidth:100,
+    })
+    const line = new Line2( geometry, material );
+    material.resolution.set(window.innerWidth, window.innerHeight);
+    return line;
   }
 
 
