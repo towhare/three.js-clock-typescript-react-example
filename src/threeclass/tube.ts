@@ -222,9 +222,15 @@ export default class FatLine{
       uniform float time;
       uniform vec3 color;
       varying vec3 glposition;
+      uniform vec2 resolution;
       void main(){
-        vec2 st = - 1.0 + 2.0 * vUv;
-        gl_FragColor = vec4(color * abs(abs(vUv.y)-1.) , 1. );//abs(vUv.y)
+        //vec2 st = - 1.0 + 2.0 * vUv;
+        vec2 st = - 1.0 + 2.0 * (gl_FragCoord.xy/resolution);
+        vec2 st1 = st + vec2(1.0/resolution.x, 0.0);
+        vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
+        float height = abs( abs( vUv.y ) - 1.0 );
+        //float valueU = height + st;
+        gl_FragColor = vec4(vec3(height), 1. );//abs(vUv.y)
         //gl_FragColor = vec4(color,1.);
       }
     `
@@ -375,8 +381,9 @@ export default class FatLine{
       varying vec3 glposition;
       varying float height;
       void main(){
-        vec2 st = - 1.0 + 2.0 * vUv;
-        gl_FragColor = vec4(color * abs(abs(vUv.y)-1.) , 1. );
+        vec2 st = - 1.0 + 2.0 * gl_FragCoord;
+        float height = ( color * abs ( abs, vUv.y ) - 1. );
+        gl_FragColor = vec4(color * abs( abs( vUv.y ) - 1. ) , 1. );
       }
     `
     // basic line geometry
@@ -424,7 +431,7 @@ export default class FatLine{
 
   }
 
-  initMiterLine(points:Array<number>){
+  initMiterLine2D(points:Array<number>){
     let positionInsance = [
       0, -0.5, 0,
       1, -0.5, 0,
