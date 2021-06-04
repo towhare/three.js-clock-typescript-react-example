@@ -271,7 +271,7 @@ function ThreeApplication() {
     })
     const planeMesh = new THREE.Mesh(planeGeometry,material);
 
-    planeMesh.position.set(3,0,0);
+    planeMesh.position.set(225,0,0);
     if(scene.current){
       scene.current.add(planeMesh);
     }

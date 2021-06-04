@@ -62,7 +62,7 @@ export default class NormalMapGenerator{
         // renderPass.clearColor = new THREE.Color(1,1,1);
         const shaderPass = new ShaderPass(this.getNormalMapShader());
         console.log('normal shaderPass', shaderPass);
-        this.composer.renderToScreen = false;
+        this.composer.renderToScreen = true;
         console.log('composer',this.composer)
         this.composer.addPass(renderPass);
         this.composer.addPass(shaderPass);
@@ -120,7 +120,7 @@ export default class NormalMapGenerator{
 
     getTexture(){
         if(this.composer){
-            return this.composer.renderTarget2.texture;
+            return this.composer.readBuffer.texture;
         }
     }
 
