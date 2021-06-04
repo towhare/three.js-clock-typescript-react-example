@@ -9,7 +9,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-
+import  NormalMapGenerator from '../renderTool/NormalmapGenerator'
 const level = 7.3;
 const Strength = 0.14
 let dzValue = 1.0 / Strength * (1.0 + Math.pow(2.0, level))
@@ -153,6 +153,8 @@ function ThreeApplication() {
 
   const composer = useRef<EffectComposer>();
 
+  const normalCreator = useRef<NormalMapGenerator>();
+
   /** */
   // init a three.js renderer camera and scene
   useEffect(()=>{
@@ -201,6 +203,7 @@ function ThreeApplication() {
     const tube = new FatLine([]);
     //scene.current.add(tube.renderObj);
     addAtestFile();
+    addNormalMap();
 
     windowResize(window.innerWidth,window.innerHeight);
     initControls();
@@ -229,10 +232,13 @@ function ThreeApplication() {
 
   // render scene function
   const render = () => {
+    if(normalCreator.current){
+      normalCreator.current.update();
+    }
     if(renderer.current && camera.current && scene.current){
       renderer.current.render(scene.current, camera.current);
       if( composer.current ) {
-        composer.current.render();
+        // composer.current.render();
       }
     }
   }
@@ -250,6 +256,31 @@ function ThreeApplication() {
     }
   }
 
+  function addNormalMap(){
+    const normalCreator2 = new NormalMapGenerator({
+      renderer:renderer.current,
+      width:512,
+      height:512
+    });
+    normalCreator2.update();
+    const texture = normalCreator2.getTexture();
+
+    const planeGeometry = new THREE.PlaneBufferGeometry(225,225);
+    const material = new THREE.MeshBasicMaterial({
+      map:texture
+    })
+    const planeMesh = new THREE.Mesh(planeGeometry,material);
+
+    planeMesh.position.set(3,0,0);
+    if(scene.current){
+      scene.current.add(planeMesh);
+    }
+    normalCreator2.addATexture('/alert.png',()=>{
+      normalCreator2.update();
+    })
+    normalCreator.current = normalCreator2;
+    
+  }
   
 
   // logic update
