@@ -19,7 +19,8 @@ import {
   CustomBlending,
   InstancedBufferAttribute,
   Vector2,
-  Object3D
+  Object3D,
+  Color
 } from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
 
@@ -94,7 +95,6 @@ export default class FatLine{
     
 
     const pointA = initEndPoint(pointARaw);
-    console.log('pointA',pointA);
 
     const pointBRaw = [
       6,3,
@@ -158,12 +158,9 @@ export default class FatLine{
 
     const newInstancedPositionAttribute = new InstancedBufferAttribute(positions,3);
     const positionAttribute = new BufferAttribute(positions,3);
-    console.log('pointA3DRaw',pointA3DRaw);
     const instancedPointA = new Float32Array(pointA3DRaw);
-    console.log('pointB3DRaw',pointB3DRaw)
     const instancedPointB = new Float32Array(pointB3DRaw);
 
-    console.log('positionAttribute',positionAttribute)
     instancedGeometry.setAttribute('position',positionAttribute);
     instancedGeometry.setAttribute('pointA', new InstancedBufferAttribute(instancedPointA,3));
     instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,3));
@@ -525,7 +522,6 @@ export default class FatLine{
         1
       );
     }
-    console.log('instanceRoundRound',instanceRoundRound)
     return instanceRoundRound
   }
 
@@ -553,8 +549,6 @@ export default class FatLine{
       pointB.push(rawPositionData[i] );
     }
     
-    console.log('pointA', pointA, 'pointB,', pointB);
-
     const instancedGeometry = new InstancedBufferGeometry();
     const instancedPointA = new Float32Array(pointA);
     const instancedPointB = new Float32Array(pointB);
@@ -601,14 +595,14 @@ export default class FatLine{
       
       vec2 pt = mix( pt0, pt1, position.z );
       vec4 clip = mix( clip0, clip1, position.z );
-      vUv = vec2( uv.x + position.z * (uv.y - uv.x) );// 0., position2.w uv.x + position.z * (uv.y - uv.x)
+      vUv = vec2( uv.x + position.z * (uv.y - uv.x), position.y );// 0., position2.w uv.x + position.z * (uv.y - uv.x)
       gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
     }
     `;
     let uniforms = {
       time:{value:1.0},
       projection:{value: new Matrix4()},
-      color:{value:new Vector3(1,1,1)},
+      color:{value:new Color(0xffff00)},
       width:{value: 4},
       resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
     }
@@ -626,7 +620,7 @@ export default class FatLine{
         vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
         float height = abs( abs( vUv.y ) - 1.0 );
         //float valueU = height + st;
-        gl_FragColor = vec4(color * vUv.x, 1. );//abs(vUv.y)
+        gl_FragColor = vec4(color , 1. );//abs(vUv.y)
         //gl_FragColor = vec4(color,1.);
       }
     `
@@ -649,8 +643,6 @@ export default class FatLine{
   }
 
   roundCapJoinLine(points:Array<number>){
-
     const geometry = new InstancedBufferGeometry();
-    
   }
 }
