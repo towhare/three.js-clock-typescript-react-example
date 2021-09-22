@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import Clock from '../threeclass/clock';
-import FatLine from '../threeclass/tube';
+import FatLine from '../threeclass/MeshLine';
 import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js'
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
@@ -134,7 +134,7 @@ function ThreeApplication() {
   const scene = useRef<THREE.Scene>();
 
   /** camera */
-  const camera = useRef<THREE.OrthographicCamera>();
+  const camera = useRef<THREE.PerspectiveCamera>();
 
   /** clock used for countting delta time */
   const clock = useRef<THREE.Clock>(new THREE.Clock());
@@ -175,8 +175,8 @@ function ThreeApplication() {
     //camera.current = new THREE.PerspectiveCamera(45,(window.innerWidth/window.innerHeight),0.1, 1000);
     const width = 1 ;
     const height = window.innerHeight/window.innerWidth * width;
-    camera.current = new THREE.OrthographicCamera(-width,width,height,-height)
-    camera.current.position.set(0,0,80);
+    camera.current = new THREE.PerspectiveCamera(60,height,1,100);
+    camera.current.position.set(0,0,50);
     camera.current.lookAt(scene.current.position);
     
     if(conntainerRef.current){
@@ -200,7 +200,7 @@ function ThreeApplication() {
     //scene.current.add(line);
     //scene.current.add(clockRenderObj.current.renderObj);
 
-    const tube = new FatLine([]);
+    const tube = new FatLine([0,0,0,1,1,1]);
     scene.current.add(tube.renderObj);
     // addAtestFile();
     // addNormalMap();
@@ -340,10 +340,12 @@ function ThreeApplication() {
         const width = window.innerWidth ;
         const height = window.innerHeight/window.innerWidth * width;
 
-        camera.current.bottom = -height/2;
-        camera.current.top = height/2;
-        camera.current.left = -width/2;
-        camera.current.right = width/2;
+        // camera.current.bottom = -height/2;
+        // camera.current.top = height/2;
+        // camera.current.left = -width/2;
+        // camera.current.right = width/2;
+
+        camera.current.aspect = window.innerWidth/window.innerHeight;
         camera.current.updateProjectionMatrix();
       }
 
