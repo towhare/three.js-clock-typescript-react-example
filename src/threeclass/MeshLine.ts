@@ -25,7 +25,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
 
 export default class FatLine{
   renderObj:Group
-  constructor(points:Array<number>){
+  constructor(points:Array<number>|Float32Array){
     this.renderObj = this.initLineRoundCap(points);
   }
 
@@ -491,8 +491,8 @@ export default class FatLine{
     ];
     // Add the left cap.
     for (let step = 0; step < resolution; step++) {
-      const theta0 = Math.PI / 2 + ((step + 0) * 2 * Math.PI) / resolution;
-      const theta1 = Math.PI / 2 + ((step + 1) * 2 * Math.PI) / resolution;
+      const theta0 = Math.PI / 2 + ((step + 0) * 1 * Math.PI) / resolution;
+      const theta1 = Math.PI / 2 + ((step + 1) * 1 * Math.PI) / resolution;
       instanceRoundRound.push(0, 0, 0, 0);
       instanceRoundRound.push(
         0.5 * Math.cos(theta0),
@@ -509,8 +509,8 @@ export default class FatLine{
     }
     // Add the right cap.
     for (let step = 0; step < resolution; step++) {
-      const theta0 = (3 * Math.PI) / 2 + ((step + 0) * 2 * Math.PI) / resolution;
-      const theta1 = (3 * Math.PI) / 2 + ((step + 1) * 2 * Math.PI) / resolution;
+      const theta0 = (3 * Math.PI) / 2 + ((step + 0) * 1 * Math.PI) / resolution;
+      const theta1 = (3 * Math.PI) / 2 + ((step + 1) * 1 * Math.PI) / resolution;
       instanceRoundRound.push(0, 0, 1, 0.);
       instanceRoundRound.push(
         0.5 * Math.cos(theta0),
@@ -525,6 +525,7 @@ export default class FatLine{
         1
       );
     }
+    console.log('instanceRoundRound',instanceRoundRound)
     return instanceRoundRound
   }
 
@@ -557,8 +558,20 @@ export default class FatLine{
     const instancedGeometry = new InstancedBufferGeometry();
     const instancedPointA = new Float32Array(pointA);
     const instancedPointB = new Float32Array(pointB);
-    const positions3D = new Float32Array(this.roundCapJoinGeometry(16));
+
+    const tempuv = new Float32Array([0,0.5,0.5,0.75,0.75,1.0])
+    const square = [
+      0, -0.5, 0, -1,
+      0, -0.5, 1, -1,
+      0, 0.5, 1, 1,
+      0, -0.5, 0, -1,
+      0, 0.5, 1, 1,
+      0, 0.5, 0, 1
+    ]
+    const positions3D = new Float32Array(this.roundCapJoinGeometry(16));// this.roundCapJoinGeometry(16)
+    instancedGeometry.setAttribute('uv',new InstancedBufferAttribute(tempuv,2));
     instancedGeometry.setAttribute('position', new BufferAttribute(positions3D,4));
+    // instancedGeometry.setAttribute('position2', new BufferAttribute(positions3D,4));
     instancedGeometry.setAttribute('pointA', new InstancedBufferAttribute(instancedPointA,3));
     instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,3));
 
@@ -588,7 +601,7 @@ export default class FatLine{
       
       vec2 pt = mix( pt0, pt1, position.z );
       vec4 clip = mix( clip0, clip1, position.z );
-      vUv = vec2( 0., position2.w );// 0., position2.w
+      vUv = vec2( uv.x + position.z * (uv.y - uv.x) );// 0., position2.w uv.x + position.z * (uv.y - uv.x)
       gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
     }
     `;
@@ -596,7 +609,7 @@ export default class FatLine{
       time:{value:1.0},
       projection:{value: new Matrix4()},
       color:{value:new Vector3(1,1,1)},
-      width:{value: 3},
+      width:{value: 4},
       resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
     }
     const fragmentShader = `
@@ -613,7 +626,7 @@ export default class FatLine{
         vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
         float height = abs( abs( vUv.y ) - 1.0 );
         //float valueU = height + st;
-        gl_FragColor = vec4(color, 1. );//abs(vUv.y)
+        gl_FragColor = vec4(color * vUv.x, 1. );//abs(vUv.y)
         //gl_FragColor = vec4(color,1.);
       }
     `

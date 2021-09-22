@@ -200,7 +200,7 @@ function ThreeApplication() {
     //scene.current.add(line);
     //scene.current.add(clockRenderObj.current.renderObj);
 
-    const tube = new FatLine([0,0,0,1,1,1]);
+    const tube = new FatLine(new Float32Array([0,0,0,1,1,1,3,2,5,-4,-6,0]));
     scene.current.add(tube.renderObj);
     // addAtestFile();
     // addNormalMap();
