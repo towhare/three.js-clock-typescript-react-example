@@ -213,7 +213,7 @@ export default class FatLine{
       time:{value:1.0},
       projection:{value: new Matrix4()},
       color:{value:new Vector3(1,1.,1)},
-      width:{value: 80},
+      width:{value: 20},
       resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
     }
     const fragmentShader = `
@@ -230,7 +230,7 @@ export default class FatLine{
         vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
         float height = abs( abs( vUv.y ) - 1.0 );
         //float valueU = height + st;
-        gl_FragColor = vec4(vec3(height), 1. );//abs(vUv.y)
+        gl_FragColor = vec4(vec3(1.), 1. );//abs(vUv.y)
         //gl_FragColor = vec4(color,1.);
       }
     `
@@ -320,7 +320,7 @@ export default class FatLine{
     group.add(meshIn3D);
 
 
-    group.add(miterMesh);
+    // group.add(miterMesh);
     return group;
   }
 

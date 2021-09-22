@@ -1877,10 +1877,10 @@
   dependencies:
     "@types/jest" "*"
 
-"@types/three@^0.126.0":
-  "integrity" "sha1-WPgOE6tfgIR0HoqdfoBLmjEDkEM="
-  "resolved" "https://registry.npm.taobao.org/@types/three/download/@types/three-0.126.0.tgz"
-  "version" "0.126.0"
+"@types/three@^0.126.2":
+  "integrity" "sha512-6JqTgijtfXcTJik8NtiNxr2L90ex6ElM00qilOGeUcrEsJLOdzLJSIkXHUYS+KPAYQYtRJQKD6XaXds3HjS+gg=="
+  "resolved" "https://registry.npmjs.org/@types/three/-/three-0.126.2.tgz"
+  "version" "0.126.2"
 
 "@types/uglify-js@*":
   "integrity" "sha512-sYAF+CF9XZ5cvEBkI7RtrG9g2GtMBkviTnBxYYyq+8BWvO4QtXfwwR6a2LFwCi4evMKZfpv6U43ViYvv17Wz3Q=="

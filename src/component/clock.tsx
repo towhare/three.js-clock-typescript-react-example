@@ -160,7 +160,7 @@ function ThreeApplication() {
   useEffect(()=>{
     // init renderer
     const renderertemp = new THREE.WebGLRenderer({
-      antialias:false
+      antialias:true
     })
 
     renderer.current = renderertemp;
@@ -201,9 +201,9 @@ function ThreeApplication() {
     //scene.current.add(clockRenderObj.current.renderObj);
 
     const tube = new FatLine([]);
-    //scene.current.add(tube.renderObj);
-    addAtestFile();
-    addNormalMap();
+    scene.current.add(tube.renderObj);
+    // addAtestFile();
+    // addNormalMap();
 
     windowResize(window.innerWidth,window.innerHeight);
     initControls();
