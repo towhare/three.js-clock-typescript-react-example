@@ -20,12 +20,14 @@ import {
   InstancedBufferAttribute,
   Vector2,
   Object3D,
-  Color
+  Color,
+  InstancedInterleavedBuffer,
+  InterleavedBufferAttribute
 } from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial';
 
 export default class FatLine{
-  renderObj:Group
+  renderObj:Mesh
   constructor(points:Array<number>|Float32Array){
     this.renderObj = this.initLineRoundCap(points);
   }
@@ -553,6 +555,8 @@ export default class FatLine{
     const instancedPointA = new Float32Array(pointA);
     const instancedPointB = new Float32Array(pointB);
 
+    const points = new Float32Array()
+
     const tempuv = new Float32Array([0,0.5,0.5,0.75,0.75,1.0])
     const square = [
       0, -0.5, 0, -1,
@@ -570,6 +574,7 @@ export default class FatLine{
     instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,3));
 
     instancedGeometry.instanceCount = 3;
+    console.log('pointA count', instancedGeometry.attributes.pointA.count)
 
 
     const vertexShader3D = `
@@ -578,25 +583,67 @@ export default class FatLine{
     uniform mat4 projection;
     uniform float width;
     varying vec3 glposition;
-    attribute vec4 position2;
+    attribute float instanceDistanceStart;
+    attribute float instanceDistanceEnd;
     uniform vec2 resolution;
+    uniform float totalLength;
     void main(){
-      vec4 clip0 = projectionMatrix * modelViewMatrix * vec4( pointA, 1. );
-      vec4 clip1 = projectionMatrix * modelViewMatrix * vec4( pointB, 1. );
+      float repeatDashLength = 2.;
+      float dashLength = 2.;
 
-      vec2 screen0 = resolution * ( 0.5 * clip0.xy/clip0.w + 0.5 );
-      vec2 screen1 = resolution * ( 0.5 * clip1.xy/clip1.w + 0.5 );
+      float startFract = fract(instanceDistanceStart/repeatDashLength);
+      vec3 ABNormalized = normalize( pointB - pointA );
 
-      vec2 xBasis = normalize( screen1 - screen0 );
-      vec2 yBasis = vec2( -xBasis.y, xBasis.x );
+      vec4 totalResult;
+      for( float currentPosition = startFract; currentPosition < ( instanceDistanceEnd - instanceDistanceStart ); ){
+        vec3 realPositionA = pointA + ( currentPosition - repeatDashLength ) * ABNormalized;
+        vec3 realPositionB = pointA + ( currentPosition - repeatDashLength + dashLength ) * ABNormalized; 
+
+        vec3 pointBOffset = vec3( realPositionB.x - realPositionA.x, realPositionB.y - realPositionA.y, realPositionB.z - realPositionA.z );
+        vec3 pointBFixed = realPositionA + pointBOffset;
+
+        vec4 clip0 = projectionMatrix * modelViewMatrix * vec4( realPositionA, 1. );
+        vec4 clip1 = projectionMatrix * modelViewMatrix * vec4( realPositionB, 1. );
+
+        vec2 screen0 = resolution * ( 0.5 * clip0.xy/clip0.w + 0.5 );
+        vec2 screen1 = resolution * ( 0.5 * clip1.xy/clip1.w + 0.5 );
+
+        vec2 xBasis = normalize( screen1 - screen0 );
+        vec2 yBasis = vec2( -xBasis.y, xBasis.x );
+        
+        vec2 pt0 = screen0 + width * ( position.x * xBasis + position.y * yBasis );
+        vec2 pt1 = screen1 + width * ( position.x * xBasis + position.y * yBasis );
+        
+        vec2 pt = mix( pt0, pt1, position.z );
+        vec4 clip = mix( clip0, clip1, position.z );
+        vUv = vec2( mix(instanceDistanceStart, instanceDistanceEnd, position.z)/totalLength );// uv.x + position.z * (uv.y - uv.x), position.y
+        vec4 theResult = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
+        totalResult += theResult ;
+
+        currentPosition += repeatDashLength;
+      }
+      gl_Position = totalResult;
+
+        vec3 pointBOffset = vec3( pointB.x - pointA.x, pointB.y - pointA.y, pointB.z - pointA.z );
+        vec3 pointBFixed = pointA + pointBOffset;
+
+        vec4 clip0 = projectionMatrix * modelViewMatrix * vec4( pointA, 1. );
+        vec4 clip1 = projectionMatrix * modelViewMatrix * vec4( pointB, 1. );
+
+        vec2 screen0 = resolution * ( 0.5 * clip0.xy/clip0.w + 0.5 );
+        vec2 screen1 = resolution * ( 0.5 * clip1.xy/clip1.w + 0.5 );
+
+        vec2 xBasis = normalize( screen1 - screen0 );
+        vec2 yBasis = vec2( -xBasis.y, xBasis.x );
+        
+        vec2 pt0 = screen0 + width * ( position.x * xBasis + position.y * yBasis );
+        vec2 pt1 = screen1 + width * ( position.x * xBasis + position.y * yBasis );
+        
+        vec2 pt = mix( pt0, pt1, position.z );
+        vec4 clip = mix( clip0, clip1, position.z );
+        vUv = vec2( mix(instanceDistanceStart, instanceDistanceEnd, position.z)/totalLength );// uv.x + position.z * (uv.y - uv.x), position.y
+        // gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
       
-      vec2 pt0 = screen0 + width * ( position.x * xBasis + position.y * yBasis );
-      vec2 pt1 = screen1 + width * ( position.x * xBasis + position.y * yBasis );
-      
-      vec2 pt = mix( pt0, pt1, position.z );
-      vec4 clip = mix( clip0, clip1, position.z );
-      vUv = vec2( uv.x + position.z * (uv.y - uv.x), position.y );// 0., position2.w uv.x + position.z * (uv.y - uv.x)
-      gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
     }
     `;
     let uniforms = {
@@ -604,7 +651,8 @@ export default class FatLine{
       projection:{value: new Matrix4()},
       color:{value:new Color(0xffff00)},
       width:{value: 4},
-      resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
+      resolution:{value: new Vector2(window.innerWidth,window.innerHeight)},
+      totalLength:{value: 1}
     }
     const fragmentShader = `
       varying vec2 vUv;
@@ -613,6 +661,7 @@ export default class FatLine{
       uniform vec3 color;
       varying vec3 glposition;
       uniform vec2 resolution;
+      uniform float totalLength;
       void main(){
         //vec2 st = - 1.0 + 2.0 * vUv;
         vec2 st = - 1.0 + 2.0 * (gl_FragCoord.xy/resolution);
@@ -620,7 +669,7 @@ export default class FatLine{
         vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
         float height = abs( abs( vUv.y ) - 1.0 );
         //float valueU = height + st;
-        gl_FragColor = vec4(color , 1. );//abs(vUv.y)
+        gl_FragColor = vec4( color , 1.0 );//abs(vUv.y) mod(color * vUv.x * totalLength  ,1.)
         //gl_FragColor = vec4(color,1.);
       }
     `
@@ -632,14 +681,43 @@ export default class FatLine{
       transparent:true,
       // blendEquation:MaxEquation,
       // blending:CustomBlending,
-      depthWrite:false
+      depthWrite:false,
+      depthTest:false
     })
 
     const lineMesh = new Mesh(instancedGeometry,lineMaterial)
+    this.computeLineDistances(instancedGeometry,uniforms);
+    return lineMesh;
+  }
 
-    const group = new Group();
-    group.add(lineMesh)
-    return group;
+  
+  computeLineDistances(geometry?:InstancedBufferGeometry,uniforms?:any){
+    console.log('computeLineDistances')
+    if(geometry){
+      console.log('geometry')
+      const instanceStart = geometry.attributes.pointA;
+      const instanceEnd = geometry.attributes.pointB;
+      const lineDistances = new Float32Array( 2 * instanceStart.count );
+
+      let start = new Vector3();
+      let end = new Vector3();
+      for( let i = 0, j = 0, l = instanceStart.count; i < l; i++, j +=2 ){
+        start.fromBufferAttribute( instanceStart, i );
+        end.fromBufferAttribute( instanceEnd, i );
+
+        lineDistances[j] = (j===0) ? 0 : lineDistances[ j - 1 ];
+        lineDistances[j+1] = lineDistances[j] + start.distanceTo(end);
+
+      }
+      const instanceDistanceBuffer = new InstancedInterleavedBuffer( lineDistances, 2, 1 );
+
+      geometry.setAttribute('instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) );
+      geometry.setAttribute('instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) );
+      console.log('geometry',geometry)
+      if(uniforms){
+        uniforms.totalLength.value = lineDistances[lineDistances.length-1];
+      }
+    }
   }
 
   roundCapJoinLine(points:Array<number>){
