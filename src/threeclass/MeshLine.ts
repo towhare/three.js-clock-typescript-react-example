@@ -234,7 +234,7 @@ export default class FatLine{
       time:{value:1.0},
       projection:{value: new Matrix4()},
       color:{value:new Vector3(1,1,1)},
-      width:{value: 3},
+      width:{value: 6},
       resolution:{value: new Vector2(window.innerWidth,window.innerHeight)}
     }
     const fragmentShader = `
@@ -566,10 +566,9 @@ export default class FatLine{
       0, 0.5, 1, 1,
       0, 0.5, 0, 1
     ]
-    const positions3D = new Float32Array(this.roundCapJoinGeometry(16));// this.roundCapJoinGeometry(16)
+    const positions3D = new Float32Array(this.roundCapJoinGeometry(8));// this.roundCapJoinGeometry(16)
     instancedGeometry.setAttribute('uv',new InstancedBufferAttribute(tempuv,2));
     instancedGeometry.setAttribute('position', new BufferAttribute(positions3D,4));
-    // instancedGeometry.setAttribute('position2', new BufferAttribute(positions3D,4));
     instancedGeometry.setAttribute('pointA', new InstancedBufferAttribute(instancedPointA,3));
     instancedGeometry.setAttribute('pointB', new InstancedBufferAttribute(instancedPointB,3));
 
@@ -622,7 +621,7 @@ export default class FatLine{
 
         currentPosition += repeatDashLength;
       }
-      gl_Position = totalResult;
+      // gl_Position = totalResult;
 
         vec3 pointBOffset = vec3( pointB.x - pointA.x, pointB.y - pointA.y, pointB.z - pointA.z );
         vec3 pointBFixed = pointA + pointBOffset;
@@ -642,7 +641,7 @@ export default class FatLine{
         vec2 pt = mix( pt0, pt1, position.z );
         vec4 clip = mix( clip0, clip1, position.z );
         vUv = vec2( mix(instanceDistanceStart, instanceDistanceEnd, position.z)/totalLength );// uv.x + position.z * (uv.y - uv.x), position.y
-        // gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
+        gl_Position = vec4(clip.w * ( 2.0 * pt/resolution - 1.0 ), clip.z, clip.w );
       
     }
     `;
@@ -650,7 +649,7 @@ export default class FatLine{
       time:{value:1.0},
       projection:{value: new Matrix4()},
       color:{value:new Color(0xffff00)},
-      width:{value: 4},
+      width:{value: 200},
       resolution:{value: new Vector2(window.innerWidth,window.innerHeight)},
       totalLength:{value: 1}
     }
@@ -669,7 +668,7 @@ export default class FatLine{
         vec2 st2 = st + vec2(0.0, 1.0/resolution.y);
         float height = abs( abs( vUv.y ) - 1.0 );
         //float valueU = height + st;
-        gl_FragColor = vec4( color , 1.0 );//abs(vUv.y) mod(color * vUv.x * totalLength  ,1.)
+        gl_FragColor = vec4( color * vUv.x, 1.0 );//abs(vUv.y) mod(color * vUv.x * totalLength  ,1.)
         //gl_FragColor = vec4(color,1.);
       }
     `
@@ -692,9 +691,7 @@ export default class FatLine{
 
   
   computeLineDistances(geometry?:InstancedBufferGeometry,uniforms?:any){
-    console.log('computeLineDistances')
     if(geometry){
-      console.log('geometry')
       const instanceStart = geometry.attributes.pointA;
       const instanceEnd = geometry.attributes.pointB;
       const lineDistances = new Float32Array( 2 * instanceStart.count );
@@ -713,7 +710,6 @@ export default class FatLine{
 
       geometry.setAttribute('instanceDistanceStart', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 0 ) );
       geometry.setAttribute('instanceDistanceEnd', new InterleavedBufferAttribute( instanceDistanceBuffer, 1, 1 ) );
-      console.log('geometry',geometry)
       if(uniforms){
         uniforms.totalLength.value = lineDistances[lineDistances.length-1];
       }
